@@ -6,10 +6,10 @@ import {
   requestBody,
   Response,
   RestBindings,
-  RestServer,
 } from '@loopback/rest';
 import { AuthRedirectDTO } from '../dto';
 import { MsalService, MSAL_SERVICE } from '../services';
+import qs from 'qs';
 
 export class AuthController {
   constructor(@inject(MSAL_SERVICE) private msalService: MsalService) { }
@@ -57,6 +57,9 @@ export class AuthController {
     /// TODO: DO WHATEVER NEEDS TO DO AFTER USER AUTHENTICATION
 
     // Redirect to client callback (with POST method)
-    return res.redirect(307, result.clientRedirectUri);
+    const url = result.clientRedirectUri + '?' + qs.stringify(result.authToken);
+    return res.redirect(url);
+
+    // return res.redirect(307, result.clientRedirectUri);
   }
 }

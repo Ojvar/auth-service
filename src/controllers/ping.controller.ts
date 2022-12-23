@@ -1,4 +1,3 @@
-import { MSAL_SERVICE, MsalService } from '../services/';
 import { inject } from '@loopback/core';
 import {
   Request,
@@ -44,12 +43,7 @@ export class PingController {
   // Map to `GET /ping`
   @get('/ping')
   @response(200, PING_RESPONSE)
-  ping(@inject(MSAL_SERVICE) msal: MsalService): object {
-    msal
-      .signIn('http://localhost:3000/ui/redirect')
-      .then(console.log)
-      .catch(console.error);
-
+  ping(): object {
     // Reply with a greeting, the current time, the url, and request headers
     return {
       greeting: 'Hello from LoopBack',
