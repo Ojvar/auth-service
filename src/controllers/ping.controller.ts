@@ -1,4 +1,5 @@
-import {inject} from '@loopback/core';
+import { MSAL_SERVICE, MsalService } from '../services/';
+import { inject } from '@loopback/core';
 import {
   Request,
   RestBindings,
@@ -18,13 +19,13 @@ const PING_RESPONSE: ResponseObject = {
         type: 'object',
         title: 'PingResponse',
         properties: {
-          greeting: {type: 'string'},
-          date: {type: 'string'},
-          url: {type: 'string'},
+          greeting: { type: 'string' },
+          date: { type: 'string' },
+          url: { type: 'string' },
           headers: {
             type: 'object',
             properties: {
-              'Content-Type': {type: 'string'},
+              'Content-Type': { type: 'string' },
             },
             additionalProperties: true,
           },
@@ -38,12 +39,17 @@ const PING_RESPONSE: ResponseObject = {
  * A simple controller to bounce back http requests
  */
 export class PingController {
-  constructor(@inject(RestBindings.Http.REQUEST) private req: Request) {}
+  constructor(@inject(RestBindings.Http.REQUEST) private req: Request) { }
 
   // Map to `GET /ping`
   @get('/ping')
   @response(200, PING_RESPONSE)
-  ping(): object {
+  ping(@inject(MSAL_SERVICE) msal: MsalService): object {
+    msal
+      .signIn('http://localhost:3000/ui/redirect')
+      .then(console.log)
+      .catch(console.error);
+
     // Reply with a greeting, the current time, the url, and request headers
     return {
       greeting: 'Hello from LoopBack',

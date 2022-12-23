@@ -1,4 +1,4 @@
-import dotevn from "dotenv";
+import dotenv from "dotenv";
 import {ApplicationConfig, AuthServiceApplication} from './application';
 
 dotenv.config();

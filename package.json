@@ -49,6 +49,7 @@
     "!*/__tests__"
   ],
   "dependencies": {
+    "@azure/msal-node": "^1.14.5",
     "@loopback/boot": "^5.0.6",
     "@loopback/core": "^4.0.6",
     "@loopback/repository": "^5.1.1",
