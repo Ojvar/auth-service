@@ -1,5 +1,16 @@
 import { inject } from '@loopback/core';
-import { get, param } from '@loopback/rest';
+import {
+  get,
+  getModelSchemaRef,
+  param,
+  post,
+  Request,
+  requestBody,
+  Response,
+  RestBindings,
+} from '@loopback/rest';
+import { stringify } from 'querystring';
+import { AuthRedirectRequestDTO } from '../dto';
 import { MsGraphAgentService, MSGRAPH_AGENT_SERVCIE } from '../services';
 
 export class AuthController {
@@ -29,29 +40,31 @@ export class AuthController {
     return this.msgraphAgentService.auth(redirectUri);
   }
 
-  // @post('/auth/redirect', {
-  //   tags: ['auth'],
-  //   description: 'Handle auth-callback of sign-in request',
-  //   summary: 'Handle auth-callback of sign-in request',
-  //   responses: { 204: { description: "Redirect to user's callback route " } },
-  // })
-  // async redirect(
-  //   @inject(RestBindings.Http.RESPONSE) res: Response,
-  //   @requestBody({
-  //     content: {
-  //       'application/x-www-form-urlencoded': { schema: { type: 'object' } },
-  //     },
-  //   })
-  //   body: AuthRedirectDTO,
-  // ): Promise<void> {
-  //   const result = await this.msalService.acquireToken(body);
-  //
-  //   /// TODO: DO WHATEVER NEEDS TO DO AFTER USER AUTHENTICATION
-  //
-  //   // Redirect to client callback (with POST method)
-  //   const url = result.clientRedirectUri + '?' + qs.stringify(result.authToken);
-  //   return res.redirect(url);
-  //
-  //   // return res.redirect(307, result.clientRedirectUri);
-  // }
+  @post('/auth/redirect', {
+    tags: ['auth'],
+    description: 'Handle auth-callback of sign-in request',
+    summary: 'Handle auth-callback of sign-in request',
+    responses: { 204: { description: "Redirect to user's callback route " } },
+  })
+  async redirect(
+    @inject(RestBindings.Http.RESPONSE) res: Response,
+    @requestBody({
+      content: {
+        'application/x-www-form-urlencoded': {
+          schema: getModelSchemaRef(AuthRedirectRequestDTO),
+        },
+      },
+    })
+    body: AuthRedirectRequestDTO,
+  ): Promise<void> {
+    const { redirectUri, ...result } = await this.msgraphAgentService.aquireToken(
+      body,
+    );
+    res.redirect(
+      `${redirectUri}?${stringify({
+        ...result,
+        token: JSON.stringify(result.token),
+      })}`,
+    );
+  }
 }

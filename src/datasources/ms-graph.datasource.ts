@@ -38,7 +38,7 @@ const config = {
     {
       template: {
         method: 'POST',
-        url: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        url: 'https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
         form: {
           client_id: '{clientId}',
@@ -50,7 +50,8 @@ const config = {
         },
       },
       functions: {
-        authRedirect: [
+        aquireToken: [
+          'tenantId',
           'clientId',
           'redirectUri',
           'clientSecret',

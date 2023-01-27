@@ -8,7 +8,10 @@ import {
 } from '@loopback/core';
 import { HttpErrors } from '@loopback/rest';
 import qs from 'querystring';
+import { MSGRAPH_SERVICE, MsGraph, AquireTokenResult } from '../services';
+import { AuthRedirectRequestDTO } from '../dto';
 import { RedisService, REDIS_SERVICE } from './redis.service';
+import { Model, model, property } from '@loopback/repository';
 
 export const MSGRAPH_AGENT_SERVCIE = BindingKey.create<MsGraphAgentService>(
   'services.MsGraphAgentService',
@@ -17,13 +20,6 @@ export const MSGRAPH_AGENT_SERVCIE_CONFIG =
   BindingKey.create<MsGraphAgentServiceConfig>(
     'services.config.MsGraphAgentService',
   );
-
-export const REDIS_EXPIRE_TIME = 300; // 5 Minutes
-export type CsrfResult = {
-  csrfToken: string;
-  encoded: string;
-};
-export type RedisValueType = Object;
 export type MsGraphAgentServiceConfig = {
   clientId: string;
   clientSecret: string;
@@ -32,50 +28,99 @@ export type MsGraphAgentServiceConfig = {
   redirectUri: string;
 };
 
+export const REDIS_EXPIRE_TIME = 300; // 5 Minutes
+export type RedisValueDataType = {
+  clientCallbackUri: string;
+  scope: string;
+};
+export type StateValue = {
+  csrfToken: string;
+  data: RedisValueDataType;
+};
+
+@model()
+export class AquireTokenResultDTO extends Model {
+  @property({ type: 'boolean', required: true }) success: boolean;
+  @property({ type: 'string', required: true }) redirectUri: string;
+  @property({ type: 'string', required: false }) error?: string;
+  @property({ required: false }) token?: AquireTokenResult;
+
+  constructor(data?: Partial<AquireTokenResultDTO>) {
+    super(data);
+  }
+}
+
 @injectable({ scope: BindingScope.APPLICATION })
 export class MsGraphAgentService {
   constructor(
     @inject(REDIS_SERVICE) private redisService: RedisService,
+    @inject(MSGRAPH_SERVICE) private msgraph: MsGraph,
     @inject(MSGRAPH_AGENT_SERVCIE_CONFIG)
     private configs: MsGraphAgentServiceConfig,
   ) { }
 
-  async auth(clientRedirectUri: string): Promise<string> {
-    const { csrfToken, encoded } = this.generateCSRF({ clientRedirectUri });
+  async auth(clientCallbackUri: string): Promise<string> {
     const { scope, redirectUri, clientId, tenantId } = this.configs;
-    await this.saveIntoRedis(csrfToken, encoded);
+    const { csrfToken, data } = this.generateState({ clientCallbackUri, scope });
+    await this.saveIntoRedis(csrfToken, data);
     return (
       `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
       qs.stringify({
         scope,
-        state: encoded,
+        state: csrfToken,
         response_type: 'code',
-        response_mode: 'query',
+        response_mode: 'form_post',
         redirect_uri: redirectUri,
         client_id: clientId,
       })
     );
   }
 
-  private async saveIntoRedis(key: string, data: RedisValueType) {
-    key = `auth_req::${key}`;
+  async aquireToken(
+    callbackData: AuthRedirectRequestDTO,
+  ): Promise<AquireTokenResultDTO> {
+    const userData = await this.loadFromRedis(callbackData.state);
+    if (callbackData.error) {
+      return new AquireTokenResultDTO({
+        success: false,
+        error: callbackData.error,
+        redirectUri: userData.clientCallbackUri,
+      });
+    }
+
+    // Aquire token
+    const { scope, redirectUri, clientId, tenantId, clientSecret } = this.configs;
+    const token = await this.msgraph.aquireToken(
+      tenantId,
+      clientId,
+      redirectUri,
+      clientSecret,
+      scope,
+      callbackData.code,
+    );
+    return new AquireTokenResultDTO({
+      success: true,
+      redirectUri: userData.clientCallbackUri,
+      token,
+    });
+  }
+
+  private async saveIntoRedis(key: string, data: RedisValueDataType) {
+    key = `auth_req_${key}`;
     return this.redisService.client.SET(key, JSON.stringify(data), {
       EX: REDIS_EXPIRE_TIME,
     });
   }
-  private async loadFromRedis(key: string): Promise<RedisValueType> {
-    key = `auth_req::${key}`;
+  private async loadFromRedis(key: string): Promise<RedisValueDataType> {
+    key = `auth_req_${key}`;
     const rawValue = await this.redisService.client.GET(key);
     if (!rawValue) {
       throw new HttpErrors.UnprocessableEntity('Invalid State');
     }
-    return JSON.parse(rawValue ?? '{}') as RedisValueType;
+    return JSON.parse(rawValue ?? '{}') as RedisValueDataType;
   }
-  private generateCSRF(meta: object = {}): CsrfResult {
+  private generateState(data: RedisValueDataType): StateValue {
     const csrfToken = generateUniqueId().toString();
-    return { csrfToken, encoded: this.toBase64({ csrfToken, ...meta }) };
-  }
-  private toBase64(data: object): string {
-    return Buffer.from(JSON.stringify(data)).toString('base64');
+    return { csrfToken, data };
   }
 }
