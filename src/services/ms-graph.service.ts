@@ -29,6 +29,7 @@ export interface MsGraph {
     scope: string,
     code: string,
   ): Promise<AquireTokenResult>;
+  userEvents(accessToken: string, filter: string): Promise<unknown>;
 }
 
 export class MsGraphProvider implements Provider<MsGraph> {

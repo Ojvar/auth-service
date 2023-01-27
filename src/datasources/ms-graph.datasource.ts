@@ -65,8 +65,9 @@ const config = {
         method: 'GET',
         url: 'https://graph.microsoft.com/v1.0/me/events',
         headers: { authorization: 'Bearer {accessToken}' },
+        query: { filter: '{filter}' },
       },
-      functions: { eventsList: ['accessToken'] },
+      functions: { userEvents: ['accessToken', 'filter'] },
     },
   ],
 };

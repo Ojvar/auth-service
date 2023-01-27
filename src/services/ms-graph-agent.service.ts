@@ -105,6 +105,10 @@ export class MsGraphAgentService {
     });
   }
 
+  async getUserEvents(token: string, filter: string): Promise<unknown> {
+    return this.msgraph.userEvents(token, filter);
+  }
+
   private async saveIntoRedis(key: string, data: RedisValueDataType) {
     key = `auth_req_${key}`;
     return this.redisService.client.SET(key, JSON.stringify(data), {
