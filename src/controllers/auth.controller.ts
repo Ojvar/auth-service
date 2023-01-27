@@ -4,7 +4,6 @@ import {
   getModelSchemaRef,
   param,
   post,
-  Request,
   requestBody,
   Response,
   RestBindings,
