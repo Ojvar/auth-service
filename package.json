@@ -57,6 +57,7 @@
     "@loopback/service-proxy": "^5.0.7",
     "dotenv": "^16.0.3",
     "loopback-connector-rest": "^4.0.2",
+    "pkce-challenge": "^3.0.0",
     "redis": "^4.5.1",
     "tslib": "^2.0.0"
   },

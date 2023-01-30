@@ -12,6 +12,10 @@ import { MSGRAPH_SERVICE, MsGraph, AquireTokenResult } from '../services';
 import { AuthRedirectRequestDTO } from '../dto';
 import { RedisService, REDIS_SERVICE } from './redis.service';
 import { Model, model, property } from '@loopback/repository';
+import pkceChallenge from 'pkce-challenge';
+
+export const PKCE_LEN = 128;
+export const CODE_CHALLENGE_METHOD = 'S256';
 
 export const MSGRAPH_AGENT_SERVCIE = BindingKey.create<MsGraphAgentService>(
   'services.MsGraphAgentService',
@@ -32,6 +36,8 @@ export const REDIS_EXPIRE_TIME = 300; // 5 Minutes
 export type RedisValueDataType = {
   clientCallbackUri: string;
   scope: string;
+  code_challenge: string;
+  code_verifier: string;
 };
 export type StateValue = {
   csrfToken: string;
@@ -60,8 +66,14 @@ export class MsGraphAgentService {
   ) { }
 
   async auth(clientCallbackUri: string): Promise<string> {
+    const { code_verifier, code_challenge } = pkceChallenge(PKCE_LEN);
     const { scope, redirectUri, clientId, tenantId } = this.configs;
-    const { csrfToken, data } = this.generateState({ clientCallbackUri, scope });
+    const { csrfToken, data } = this.generateState({
+      clientCallbackUri,
+      scope,
+      code_challenge,
+      code_verifier,
+    });
     await this.saveIntoRedis(csrfToken, data);
     return (
       `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
@@ -72,6 +84,8 @@ export class MsGraphAgentService {
         response_mode: 'form_post',
         redirect_uri: redirectUri,
         client_id: clientId,
+        code_challenge,
+        code_challenge_method: CODE_CHALLENGE_METHOD,
       })
     );
   }
@@ -97,6 +111,7 @@ export class MsGraphAgentService {
       clientSecret,
       scope,
       callbackData.code,
+      userData.code_verifier,
     );
     return new AquireTokenResultDTO({
       success: true,

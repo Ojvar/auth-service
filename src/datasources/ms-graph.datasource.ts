@@ -47,6 +47,7 @@ const config = {
           code: '{code}',
           grant_type: 'authorization_code',
           client_secret: '{clientSecret}',
+          code_verifier: '{codeVerifier}',
         },
       },
       functions: {
@@ -57,6 +58,7 @@ const config = {
           'clientSecret',
           'scope',
           'code',
+          'codeVerifier',
         ],
       },
     },

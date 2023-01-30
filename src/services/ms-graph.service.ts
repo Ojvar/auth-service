@@ -28,6 +28,7 @@ export interface MsGraph {
     clientSecret: string,
     scope: string,
     code: string,
+    codeVerifier: string,
   ): Promise<AquireTokenResult>;
   userEvents(accessToken: string, filter: string): Promise<unknown>;
 }
