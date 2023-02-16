@@ -9,8 +9,7 @@ import { RestApplication } from '@loopback/rest';
 import { ServiceMixin } from '@loopback/service-proxy';
 import path from 'path';
 import { MySequence } from './sequence';
-import { MSAL_SERVICE_CONFIG, REDIS_SERVICE_CONFIG } from './services';
-import { LogLevel } from '@azure/msal-node';
+import { MSGRAPH_AGENT_SERVCIE_CONFIG, REDIS_SERVICE_CONFIG } from './services';
 
 export { ApplicationConfig };
 
@@ -48,37 +47,23 @@ export class AuthServiceApplication extends BootMixin(
 
   configApp() {
     this.configRedis();
-    this.configMSAL();
+    this.configMsGraph();
   }
 
-  configMSAL() {
+  configMsGraph() {
     const {
-      AZURE_CLIENT_ID,
-      AZURE_TENANT_ID,
-      AZURE_CLIENT_SECRET,
-      AZURE_CLOUD_INSTANCE,
-      AZURE_REDIRECT_URI,
+      MSGRAPH_SCOPE,
+      MSGRAPH_CLIENT_ID,
+      MSGRAPH_TENANT_ID,
+      MSGRAPH_REDIRECT_URI,
+      MSGRAPH_CLIENT_SECRET,
     } = process.env;
-    this.bind(MSAL_SERVICE_CONFIG).to({
-      redirectURI: AZURE_REDIRECT_URI,
-      auth: {
-        clientId: AZURE_CLIENT_ID,
-        authority: `${AZURE_CLOUD_INSTANCE}${AZURE_TENANT_ID}`,
-        clientSecret: AZURE_CLIENT_SECRET,
-      },
-      system: {
-        loggerOptions: {
-          loggerCallback(
-            _loglevel: LogLevel,
-            message: string,
-            _containsPii: boolean,
-          ) {
-            console.log(message);
-          },
-          piiLoggingEnabled: false,
-          logLevel: LogLevel.Info,
-        },
-      },
+    this.bind(MSGRAPH_AGENT_SERVCIE_CONFIG).to({
+      clientId: MSGRAPH_CLIENT_ID,
+      clientSecret: MSGRAPH_CLIENT_SECRET,
+      redirectUri: MSGRAPH_REDIRECT_URI,
+      scope: MSGRAPH_SCOPE,
+      tenantId: MSGRAPH_TENANT_ID,
     });
   }
 

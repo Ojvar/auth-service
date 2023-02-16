@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-export class AuthRedirectDTO {
-  [key: string]: unknown;
-  code: string;
-  client_info: string;
-  state: string;
-  session_state: string;
+import { model, property } from '@loopback/repository';
+
+@model({ settings: { strict: false } })
+export class AuthRedirectRequestDTO {
+  @property({ type: 'string', required: false }) code?: string;
+  @property({ type: 'string', required: true }) state: string;
+  @property({ type: 'string', required: false }) error?: string;
+  @property({ type: 'string', required: false }) session_state?: string;
+  [key: string]: string | number | undefined;
 }
