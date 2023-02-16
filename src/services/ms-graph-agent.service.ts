@@ -94,7 +94,7 @@ export class MsGraphAgentService {
     callbackData: AuthRedirectRequestDTO,
   ): Promise<AquireTokenResultDTO> {
     const userData = await this.loadFromRedis(callbackData.state);
-    if (callbackData.error) {
+    if (callbackData.error || !callbackData.code) {
       return new AquireTokenResultDTO({
         success: false,
         error: callbackData.error,
@@ -110,7 +110,7 @@ export class MsGraphAgentService {
       redirectUri,
       clientSecret,
       scope,
-      callbackData.code,
+      callbackData.code!,
       userData.code_verifier,
     );
     return new AquireTokenResultDTO({
